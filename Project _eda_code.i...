@@ -1,0 +1,66 @@
+# Install required packages
+!pip install pandas scikit-learn
+
+# Import libraries
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Sample movie dataset
+data = {
+    'title': [
+        'The Matrix', 'John Wick', 'Inception', 'Interstellar', 'The Dark Knight',
+        'Batman Begins', 'Avengers', 'Iron Man', 'Captain America', 'Guardians of the Galaxy'
+    ],
+    'genre': [
+        'Action Sci-Fi', 'Action Thriller', 'Action Sci-Fi', 'Sci-Fi Drama', 'Action Crime',
+        'Action', 'Action Adventure', 'Action Sci-Fi', 'Action Adventure', 'Action Sci-Fi'
+    ],
+    'description': [
+        'A hacker discovers the reality is a simulation',
+        'A hitman seeks revenge for his dog',
+        'A thief enters people’s dreams to steal secrets',
+        'A team travels through a wormhole in space',
+        'Batman fights crime in Gotham City',
+        'Bruce Wayne becomes Batman',
+        'Superheroes assemble to fight alien threats',
+        'A billionaire builds a high-tech suit to fight crime',
+        'A super-soldier fights for justice',
+        'A group of misfits protect the galaxy from threats'
+    ]
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+# Combine features
+df['combined'] = df['genre'] + " " + df['description']
+
+# TF-IDF vectorization
+tfidf = TfidfVectorizer(stop_words='english')
+tfidf_matrix = tfidf.fit_transform(df['combined'])
+
+# Cosine similarity
+cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+
+# Recommendation function
+def recommend_movie(title, cosine_sim=cosine_sim):
+    title = title.lower()
+    if title not in df['title'].str.lower().values:
+        return ["Movie not found. Please check the title."]
+    
+    idx = df[df['title'].str.lower() == title].index[0]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    sim_scores = sim_scores[1:6]  # Top 5
+    movie_indices = [i[0] for i in sim_scores]
+    return df['title'].iloc[movie_indices].tolist()
+
+# Test the recommendation
+input_movie = "The Matrix"
+recommendations = recommend_movie(input_movie)
+
+# Display output
+print(f"\nBecause you like '{input_movie}', you might also like:")
+for movie in recommendations:
+    print("-", movie)
